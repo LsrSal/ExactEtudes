@@ -6,7 +6,7 @@
 <img width="50" height="40" alt="V1 - proof of concept" src="https://github.com/user-attachments/assets/9295c06e-377d-49c9-b467-ec2768ecd1b7" />
 
 
-- This HTML app is to replace Clockworks for the ancient MIDI interfaces to support most used function nowadays - MIDI routing. (Anybody still use analog SMPTE?)
+- This HTML app is to replace Clockworks for the ancient MIDI interfaces to support most used function nowadays - MIDI routing, merging and splitting. (Anybody still use analog SMPTE?)
 - It supposed to work with any modern browser that support MIDI access. (Tested with Edge only.) Best to run from local disk, just drop it on your browser.
 - It has improved interface to be comfortable on stage and in studio. All settings are locally saved.
 - Has 8 sets of tables. Note that it does not use internal MOTU presets but store it locally and update routing as needed.
