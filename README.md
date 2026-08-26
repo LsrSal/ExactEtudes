@@ -13,7 +13,10 @@
 - Fully editable interface names.
 - It appeared to be working with any vintage MTP, including MTP original, II and AV.
 - Tested with  AV: message can be sent through any interface, including, any MIDI port, old MAC port, or USB (on equipped models).
-- Tested with original MTP with ancient MAC serial interface (need an adapter, like my DURA_MIDI). May also work through MIDI ports.
+- Original MTP taking routing messages only through MAC port. Inserting these into any MIDI ports has no effect.
+- Tested with original MTP through MAC serial interface (need an adapter, like my DURA_MIDI. Make one! Original MTP become very potent USB MIDI interface and router that works with any modern OS, class compliant - no extra drivers needed.)
+- I do not have MTP_II to test. Please report. I guess it is closer to AV so chances are it may take SysEx though MIDI ports just like AV.
+- Any other MOTU MIDI hardware? You test and report or send me one and I will do it.
 
 Note: if file is not local but server hosted - must be HTTPS, unsecured HTTP does not allow MIDI control.
 
