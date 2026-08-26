@@ -23,6 +23,8 @@ Please try it with your MOTU or Opcode and report.
 (Anybody would like to donate some old MOTUs for further development?)
 _______________________________
 V3 fixed preset buttons colors, but not much of other testing done so far. Nothing else supposed to change.
+
+V4  Removed log window and instead sent logs to browser's console. 
 ___________________________________
 
 I may not be able to continue development on GitHub because of soon to be enforced here 2FA. Hopefully discussion/chat will not be affected.
