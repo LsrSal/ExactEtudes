@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExactEtudes MOTU MTP Routing Matrix - Multi-Tab & MIDI</title>
+    <style>
+        :root {
+            --grid-bg: #1e1e2f;
+            --box-unchecked: #3a3f58;
+            --box-checked: #ff6b6b;
+            --box-hover-unchecked: #4c5270;
+            --box-hover-checked: #ff8787;
+            --text-color: #cfd3dc;
+            --tab-bg: #2a2e43;
+            --tab-active-bg: #ff6b6b;
+            --gap-size: 8px;
+            --cell-size: 72px;
+            --row-header-width: 90px;
+            --app-total-width: 778px;
+        }
+
+        body {
+            background-color: var(--grid-bg);
+            color: var(--text-color);
+            font-family: system-ui, -apple-system, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            width: var(--app-total-width);
+            box-sizing: border-box;
+        }
+
+        .tab-bar {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            gap: 4px;
+            margin-bottom: 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .tab-btn {
+            background: var(--tab-bg);
+            color: var(--text-color);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 8px 2px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            text-align: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            transition: background 0.2s, border-color 0.2s;
+            box-sizing: border-box;
+        }
+
+        .tab-btn:hover {
+            background: var(--box-hover-unchecked);
+        }
+
+        .tab-btn.active {
+            background: var(--tab-active-bg);
+            color: #ffffff;
+            border-color: var(--tab-active-bg);
+            font-weight: bold;
+        }
+
+        .tab-btn input[type="text"] {
+            background: transparent;
+            border: none;
+            color: inherit;
+            font: inherit;
+            text-align: center;
+            outline: none;
+            cursor: pointer;
+            width: 100%;
+            padding: 0;
+        }
+
+        .tab-content {
+            display: none;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .grid-frame {
+            display: block;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            padding: 20px;
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        .grid-wrapper {
+            display: grid;
+            grid-template-columns: var(--row-header-width) repeat(8, var(--cell-size));
+            grid-template-rows: var(--cell-size) repeat(8, var(--cell-size));
+            gap: var(--gap-size);
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .caption {
+            background: transparent;
+            border: 1px dashed transparent;
+            color: var(--text-color);
+            font-size: 12px;
+            text-align: center;
+            width: 100%;
+            height: 100%;
+            border-radius: 6px;
+            outline: none;
+            padding: 0 4px;
+            box-sizing: border-box;
+        }
+
+        .caption:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .caption:focus {
+            border-color: var(--box-checked);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .row-caption {
+            justify-content: flex-end;
+            padding-right: 8px;
+        }
+
+        .color-grid-cell input[type="checkbox"] {
+            appearance: none;
+            -webkit-appearance: none;
+            width: var(--cell-size);
+            height: var(--cell-size);
+            background-color: var(--box-unchecked);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            margin: 0;
+            box-sizing: border-box;
+        }
+
+        .color-grid-cell input[type="checkbox"]:hover {
+            background-color: var(--box-hover-unchecked);
+        }
+
+        .color-grid-cell input[type="checkbox"]:checked {
+            background-color: var(--box-checked);
+        }
+
+        .color-grid-cell input[type="checkbox"]:checked:hover {
+            background-color: var(--box-hover-checked);
+        }
+
+        .color-grid-cell input[type="checkbox"]:active {
+            transform: scale(0.92);
+        }
+
+        /* Settings Layout */
+        .settings-content {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        .settings-content h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 18px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 10px;
+        }
+
+        .settings-section-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--box-checked);
+        }
+
+        .color-picker-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .color-picker-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .color-picker-item label {
+            font-size: 13px;
+        }
+
+        .color-picker-item input[type="color"] {
+            border: none;
+            width: 36px;
+            height: 28px;
+            border-radius: 4px;
+            cursor: pointer;
+            background: transparent;
+        }
+
+        .midi-settings-box {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 24px;
+        }
+
+        .midi-settings-box select {
+            width: 100%;
+            background: var(--tab-bg);
+            color: var(--text-color);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 8px;
+            border-radius: 6px;
+            margin-top: 8px;
+            outline: none;
+        }
+
+        #midi-status {
+            font-weight: bold;
+            color: #ff6b6b;
+        }
+        #midi-status.connected {
+            color: #51cf66;
+        }
+
+        .settings-actions {
+            text-align: center;
+        }
+
+        .reset-btn {
+            background: #ff6b6b;
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            transition: opacity 0.2s;
+        }
+
+        .reset-btn:hover {
+            opacity: 0.85;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- Tab Buttons Bar -->
+        <div class="tab-bar" id="tabBar"></div>
+
+        <!-- Tab Contents Container -->
+        <div id="tabContentContainer"></div>
+    </div>
+
+    <script>
+        const TOTAL_TABS = 9;
+        const GRID_SIZE = 8;
+
+        const STORAGE_KEY_STATES = 'multi_tab_grid_states';
+        const STORAGE_KEY_GLOBAL_CAPTIONS = 'multi_tab_global_captions';
+        const STORAGE_KEY_TAB_NAMES = 'multi_tab_names';
+        const STORAGE_KEY_ACTIVE_TAB = 'multi_tab_active';
+        const STORAGE_KEY_COLORS = 'multi_tab_colors';
+        const STORAGE_KEY_PORT = 'motu_mtp_selected_midi_port';
+
+        let midiAccessGlobal = null;
+        let isInitialized = false;
+
+        const defaultColors = {
+            '--grid-bg': '#1e1e2f',
+            '--text-color': '#cfd3dc',
+            '--box-unchecked': '#3a3f58',
+            '--box-checked': '#ff6b6b',
+            '--box-hover-unchecked': '#4c5270',
+            '--box-hover-checked': '#ff8787',
+            '--tab-bg': '#2a2e43',
+            '--tab-active-bg': '#ff6b6b'
+        };
+
+        const tabBar = document.getElementById('tabBar');
+        const contentContainer = document.getElementById('tabContentContainer');
+
+        function logToConsole(message, isError = false) {
+            let timestamp = new Date().toLocaleTimeString();
+            let prefix = `[${timestamp}] [MOTU MTP Router]`;
+            if (isError) {
+                console.error(`${prefix} ${message}`);
+            } else {
+                console.log(`${prefix} ${message}`);
+            }
+        }
+
+        function formatSysExHex(byteArray) {
+            return byteArray.map(byte => byte.toString(16).toUpperCase().padStart(2, '0')).join(' ');
+        }
+
+        function initApp() {
+            loadColors();
+
+            const savedTabNames = JSON.parse(localStorage.getItem(STORAGE_KEY_TAB_NAMES)) || {};
+            const activeTabIdx = parseInt(localStorage.getItem(STORAGE_KEY_ACTIVE_TAB)) || 0;
+
+            for (let t = 0; t < TOTAL_TABS; t++) {
+                const btn = document.createElement('button');
+                btn.className = `tab-btn ${t === activeTabIdx ? 'active' : ''}`;
+                btn.dataset.tabIndex = t;
+
+                if (t < 8) {
+                    const nameInput = document.createElement('input');
+                    nameInput.type = 'text';
+                    nameInput.value = savedTabNames[t] || `Setup ${t + 1}`;
+                    nameInput.dataset.tabIndex = t;
+                    nameInput.addEventListener('input', saveAllData);
+                    btn.appendChild(nameInput);
+                } else {
+                    btn.textContent = "Settings";
+                }
+
+                btn.addEventListener('click', (e) => {
+                    if (e.target.tagName === 'INPUT') return;
+                    switchTab(t);
+                });
+                btn.addEventListener('mousedown', () => switchTab(t));
+                tabBar.appendChild(btn);
+
+                const panel = document.createElement('div');
+                panel.className = `tab-content ${t === activeTabIdx ? 'active' : ''}`;
+                panel.dataset.tabPanel = t;
+
+                if (t < 8) {
+                    const gridFrame = document.createElement('div');
+                    gridFrame.className = 'grid-frame';
+
+                    const gridWrapper = document.createElement('div');
+                    gridWrapper.className = 'grid-wrapper';
+
+                    const corner = document.createElement('div');
+                    corner.className = 'cell corner';
+                    gridWrapper.appendChild(corner);
+
+                    // Column Captions (Out 1-8) - Shared globally
+                    for (let c = 0; c < GRID_SIZE; c++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'cell';
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.className = 'caption col-caption global-caption';
+                        input.dataset.type = 'col';
+                        input.dataset.index = c;
+                        input.placeholder = `Out ${c + 1}`;
+                        input.addEventListener('input', handleGlobalCaptionInput);
+                        cell.appendChild(input);
+                        gridWrapper.appendChild(cell);
+                    }
+
+                    // Rows (In 1-8) + Checkboxes
+                    for (let r = 0; r < GRID_SIZE; r++) {
+                        const rowHeaderCell = document.createElement('div');
+                        rowHeaderCell.className = 'cell row-caption';
+                        const rowInput = document.createElement('input');
+                        rowInput.type = 'text';
+                        rowInput.className = 'caption global-caption';
+                        rowInput.dataset.type = 'row';
+                        rowInput.dataset.index = r;
+                        rowInput.placeholder = `In ${r + 1}`;
+                        rowInput.addEventListener('input', handleGlobalCaptionInput);
+                        rowHeaderCell.appendChild(rowInput);
+                        gridWrapper.appendChild(rowHeaderCell);
+
+                        for (let c = 0; c < GRID_SIZE; c++) {
+                            const cell = document.createElement('div');
+                            cell.className = 'cell color-grid-cell';
+                            
+                            const checkbox = document.createElement('input');
+                            checkbox.type = 'checkbox';
+                            checkbox.dataset.tab = t;
+                            checkbox.dataset.row = r;
+                            checkbox.dataset.col = c;
+                            checkbox.addEventListener('change', (e) => {
+                                saveAllData();
+                                sendSingleInputSysEx(t, r);
+                            });
+                            
+                            cell.appendChild(checkbox);
+                            gridWrapper.appendChild(cell);
+                        }
+                    }
+                    gridFrame.appendChild(gridWrapper);
+                    panel.appendChild(gridFrame);
+                } else {
+                    // Settings Panel (Tab 9)
+                    const settingsPanel = document.createElement('div');
+                    settingsPanel.className = 'settings-content';
+                    settingsPanel.innerHTML = `
+                        <h2>App Settings & Preferences</h2>
+                        
+                        <div class="settings-section-title">MIDI Output Configuration</div>
+                        <div class="midi-settings-box">
+                            <label for="midiOutputSelect"><strong>MOTU MTP MIDI Output Port:</strong></label>
+                            <select id="midiOutputSelect" onchange="saveMidiSelection()">
+                                <option value="">-- Select MIDI Output --</option>
+                            </select>
+                            <div style="margin-top: 8px; font-size: 12px;">Web MIDI Status: <span id="midi-status">Disconnected</span></div>
+                        </div>
+
+                        <div class="settings-section-title">Theme Color Preferences</div>
+                        <div class="color-picker-grid">
+                            <div class="color-picker-item">
+                                <label for="col-bg">Background Color</label>
+                                <input type="color" id="col-bg" data-var="--grid-bg">
+                            </div>
+                            <div class="color-picker-item">
+                                <label for="col-text">Text Color</label>
+                                <input type="color" id="col-text" data-var="--text-color">
+                            </div>
+                            <div class="color-picker-item">
+                                <label for="col-tab">Tab Background</label>
+                                <input type="color" id="col-tab" data-var="--tab-bg">
+                            </div>
+                            <div class="color-picker-item">
+                                <label for="col-tab-active">Active Tab Background</label>
+                                <input type="color" id="col-tab-active" data-var="--tab-active-bg">
+                            </div>
+                            <div class="color-picker-item">
+                                <label for="col-unchecked">Box Unchecked</label>
+                                <input type="color" id="col-unchecked" data-var="--box-unchecked">
+                            </div>
+                            <div class="color-picker-item">
+                                <label for="col-checked">Box Checked</label>
+                                <input type="color" id="col-checked" data-var="--box-checked">
+                            </div>
+                            <div class="color-picker-item">
+                                <label for="col-hover-un">Hover (Unchecked)</label>
+                                <input type="color" id="col-hover-un" data-var="--box-hover-unchecked">
+                            </div>
+                            <div class="color-picker-item">
+                                <label for="col-hover-chk">Hover (Checked)</label>
+                                <input type="color" id="col-hover-chk" data-var="--box-hover-checked">
+                            </div>
+                        </div>
+                        <div class="settings-actions">
+                            <button class="reset-btn" id="resetColorsBtn">Reset Default Colors</button>
+                        </div>
+                    `;
+                    panel.appendChild(settingsPanel);
+                }
+
+                contentContainer.appendChild(panel);
+            }
+
+            loadAllData();
+            initColorPickers();
+            isInitialized = true;
+        }
+
+        // Synchronize global names across all tabs in real-time
+        function handleGlobalCaptionInput(e) {
+            const type = e.target.dataset.type;
+            const index = e.target.dataset.index;
+            const value = e.target.value;
+
+            document.querySelectorAll(`.global-caption[data-type="${type}"][data-index="${index}"]`).forEach(input => {
+                if (input !== e.target) {
+                    input.value = value;
+                }
+            });
+
+            saveAllData();
+        }
+
+        function switchTab(index) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            document.querySelector(`.tab-btn[data-tab-index="${index}"]`).classList.add('active');
+            document.querySelector(`.tab-content[data-tab-panel="${index}"]`).classList.add('active');
+
+            localStorage.setItem(STORAGE_KEY_ACTIVE_TAB, index);
+
+            if (index < 8 && isInitialized) {
+                sendCompleteRoutingSysEx(index);
+            }
+        }
+
+        // Web MIDI Initialization & Port Management
+        if (navigator.requestMIDIAccess) {
+            navigator.requestMIDIAccess({ sysex: true }).then(onMIDISuccess, onMIDIFailure);
+        } else {
+            document.getElementById("midi-status").innerText = "Web MIDI not supported.";
+            logToConsole("Web MIDI API not supported in this browser environment.", true);
+        }
+
+        function onMIDISuccess(midiAccess) {
+            midiAccessGlobal = midiAccess;
+            updateOutputPorts();
+            let statusEl = document.getElementById("midi-status");
+            if (statusEl) {
+                statusEl.innerText = "Ready (SysEx Enabled)";
+                statusEl.classList.add("connected");
+            }
+            logToConsole("Web MIDI access granted with SysEx support.");
+            
+            midiAccess.onstatechange = updateOutputPorts;
+
+            let activeTabIdx = parseInt(localStorage.getItem(STORAGE_KEY_ACTIVE_TAB)) || 0;
+            if (activeTabIdx < 8) {
+                sendCompleteRoutingSysEx(activeTabIdx);
+            }
+        }
+
+        function onMIDIFailure(err) {
+            let statusEl = document.getElementById("midi-status");
+            if (statusEl) statusEl.innerText = "Failed to access MIDI";
+            logToConsole("Failed to acquire MIDI access. Ensure SysEx permissions are allowed.", true);
+        }
+
+        function updateOutputPorts() {
+            const select = document.getElementById("midiOutputSelect");
+            if (!select) return;
+            const savedPortId = localStorage.getItem(STORAGE_KEY_PORT);
+            select.innerHTML = '<option value="">-- Select MIDI Output --</option>';
+            
+            let outputs = midiAccessGlobal.outputs.values();
+            let foundSavedPort = false;
+
+            for (let output of outputs) {
+                let option = document.createElement("option");
+                option.value = output.id;
+                option.text = output.name;
+                if (output.id === savedPortId) {
+                    option.selected = true;
+                    foundSavedPort = true;
+                }
+                select.appendChild(option);
+            }
+
+            if (foundSavedPort) {
+                logToConsole("Preferred MIDI output port successfully restored.");
+            }
+        }
+
+        function saveMidiSelection() {
+            const select = document.getElementById("midiOutputSelect");
+            localStorage.setItem(STORAGE_KEY_PORT, select.value);
+            logToConsole(`MIDI output port updated to: ${select.options[select.selectedIndex].text}`);
+        }
+
+        // Transmit SysEx for a single input row
+        function sendSingleInputSysEx(tabIdx, inPort) {
+            const select = document.getElementById("midiOutputSelect");
+            if (!select || !select.value || !midiAccessGlobal) return;
+
+            let outputPort = midiAccessGlobal.outputs.get(select.value);
+            if (!outputPort) return;
+
+            let outByte1_7 = 0x00; 
+            let outByte8 = 0x00;   
+
+            for (let outPort = 0; outPort < GRID_SIZE; outPort++) {
+                let checkbox = document.querySelector(`input[type="checkbox"][data-tab="${tabIdx}"][data-row="${inPort}"][data-col="${outPort}"]`);
+                if (checkbox && checkbox.checked) {
+                    if (outPort < 7) {
+                        outByte1_7 |= (1 << (6 - outPort));
+                    } else if (outPort === 7) {
+                        outByte8 = 0x40;
+                    }
+                }
+            }
+
+            let sysexArray = [
+                0xF0, 
+                0x00, 0x00, 0x33, 
+                0x02,             
+                0x0A,             
+                inPort,           
+                outByte1_7,       
+                outByte8,         
+                0x10,             
+                0xF7              
+            ];
+
+            outputPort.send(sysexArray);
+            logToConsole(`Tab ${tabIdx + 1} | In ${inPort + 1} updated | SysEx: ${formatSysExHex(sysexArray)}`);
+        }
+
+        // Transmit complete routing matrix configuration for all 8 inputs of a specific tab
+        function sendCompleteRoutingSysEx(tabIdx) {
+            const select = document.getElementById("midiOutputSelect");
+            if (!select || !select.value || !midiAccessGlobal) return;
+
+            let outputPort = midiAccessGlobal.outputs.get(select.value);
+            if (!outputPort) return;
+
+            logToConsole(`Transmitting complete Tab ${tabIdx + 1} configuration to device...`);
+
+            for (let inPort = 0; inPort < GRID_SIZE; inPort++) {
+                let outByte1_7 = 0x00; 
+                let outByte8 = 0x00;   
+
+                for (let outPort = 0; outPort < GRID_SIZE; outPort++) {
+                    let checkbox = document.querySelector(`input[type="checkbox"][data-tab="${tabIdx}"][data-row="${inPort}"][data-col="${outPort}"]`);
+                    if (checkbox && checkbox.checked) {
+                        if (outPort < 7) {
+                            outByte1_7 |= (1 << (6 - outPort));
+                        } else if (outPort === 7) {
+                            outByte8 = 0x40;
+                        }
+                    }
+                }
+
+                let sysexArray = [
+                    0xF0, 
+                    0x00, 0x00, 0x33, 
+                    0x02,             
+                    0x0A,             
+                    inPort,           
+                    outByte1_7,       
+                    outByte8,         
+                    0x10,             
+                    0xF7              
+                ];
+
+                outputPort.send(sysexArray);
+                logToConsole(`Tab ${tabIdx + 1} | In ${inPort + 1} sent | SysEx: ${formatSysExHex(sysexArray)}`);
+            }
+            logToConsole(`Tab ${tabIdx + 1} full transmission complete.`);
+        }
+
+        // Color Picker Management
+        function initColorPickers() {
+            const colorInputs = document.querySelectorAll('.settings-content input[type="color"]');
+            
+            colorInputs.forEach(input => {
+                const cssVar = input.dataset.var;
+                const currentColor = getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim();
+                if (currentColor) input.value = currentColor;
+
+                input.addEventListener('input', (e) => {
+                    const val = e.target.value;
+                    document.documentElement.style.setProperty(cssVar, val);
+                    saveColors();
+                });
+            });
+
+            const resetBtn = document.getElementById('resetColorsBtn');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', () => {
+                    localStorage.removeItem(STORAGE_KEY_COLORS);
+                    Object.keys(defaultColors).forEach(cssVar => {
+                        document.documentElement.style.setProperty(cssVar, defaultColors[cssVar]);
+                    });
+                    initColorPickers();
+                });
+            }
+        }
+
+        function saveColors() {
+            const colors = {};
+            document.querySelectorAll('.settings-content input[type="color"]').forEach(input => {
+                colors[input.dataset.var] = input.value;
+            });
+            localStorage.setItem(STORAGE_KEY_COLORS, JSON.stringify(colors));
+        }
+
+        function loadColors() {
+            const savedColors = JSON.parse(localStorage.getItem(STORAGE_KEY_COLORS)) || defaultColors;
+            Object.keys(savedColors).forEach(cssVar => {
+                document.documentElement.style.setProperty(cssVar, savedColors[cssVar]);
+            });
+        }
+
+        function saveAllData() {
+            const tabNames = {};
+            document.querySelectorAll('.tab-btn input').forEach(input => {
+                tabNames[input.dataset.tabIndex] = input.value;
+            });
+            localStorage.setItem(STORAGE_KEY_TAB_NAMES, JSON.stringify(tabNames));
+
+            const states = {};
+            document.querySelectorAll('.color-grid-cell input').forEach(cb => {
+                const key = `${cb.dataset.tab}-${cb.dataset.row}-${cb.dataset.col}`;
+                states[key] = cb.checked;
+            });
+            localStorage.setItem(STORAGE_KEY_STATES, JSON.stringify(states));
+
+            const globalCaptions = {};
+            document.querySelectorAll('.tab-content[data-tab-panel="0"] .global-caption').forEach(cap => {
+                const key = `${cap.dataset.type}-${cap.dataset.index}`;
+                globalCaptions[key] = cap.value;
+            });
+            localStorage.setItem(STORAGE_KEY_GLOBAL_CAPTIONS, JSON.stringify(globalCaptions));
+        }
+
+        function loadAllData() {
+            const savedStates = JSON.parse(localStorage.getItem(STORAGE_KEY_STATES));
+            if (savedStates) {
+                document.querySelectorAll('.color-grid-cell input').forEach(cb => {
+                    const key = `${cb.dataset.tab}-${cb.dataset.row}-${cb.dataset.col}`;
+                    if (savedStates[key] !== undefined) {
+                        cb.checked = savedStates[key];
+                    }
+                });
+            }
+
+            const savedGlobalCaptions = JSON.parse(localStorage.getItem(STORAGE_KEY_GLOBAL_CAPTIONS));
+            if (savedGlobalCaptions) {
+                Object.keys(savedGlobalCaptions).forEach(key => {
+                    const [type, index] = key.split('-');
+                    const value = savedGlobalCaptions[key];
+                    document.querySelectorAll(`.global-caption[data-type="${type}"][data-index="${index}"]`).forEach(cap => {
+                        cap.value = value;
+                    });
+                });
+            }
+        }
+
+        initApp();
+    </script>
+</body>
+</html>
