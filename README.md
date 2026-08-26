@@ -6,12 +6,18 @@ Web (or local file in browser) based alternative to MOTU's ClockWorks.
 Finally, first working concept. Vibe coded with Gemini.
 It has persistent local storage for the routing table settings and for MIDI port selection (the one connected to MOTU). I ran it as local file in Edge. You have to permit your browser to access MIDI on your computer. Then make proper selection of it, if you have more than one MIDI interface ("cable") on your computer.
 MIDI in browser will only work from local file or from HTTPS. Will not work from plain unsecured HTTP.
-So far tested only with original MTP from ~1990.
-I have tested it by inserting message into Mac's RS422 serial interface as straight MIDI SysEx. I have heard that MTP AV, and probably MTP II as well, may take configuration SysEx on external ports 1 and 8 only. I have not tried yet to insert it into external ports of my MTP. (Anybody like to donate some old MOTUs for further development?)
 
-For my development use my DuraMIDI USB adapter. Latest firmware has feature on Port 8 where any SysEx will get passed to the interface unaltered and pass back whatever is replied.
+So far tested with original MTP from ~1990 and MTP_AV. Pretty certain it will work the same way with MTP_II.
+
+MTP_AV can be controlled with this app from external MIDI input ports with different MIDI interface, or for USB version - from the host PC by sending commands directly into MTP's USB MIDI ports, they will be intercepted by MTP and will not reach external ports.
+
+I have tested it with original MTP by inserting messages into Mac's RS422 serial interface as straight MIDI SysEx.
+
+For my development I use my DuraMIDI USB adapter. Latest firmware has feature on Port 8 where any SysEx will get passed to the interface unaltered and pass back whatever is replied.
 
 Please try it with your MOTU or Opcode and report.
+
+(Anybody would like to donate some old MOTUs for further development?)
 
 ___________________________________
 
