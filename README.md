@@ -1,5 +1,5 @@
 # ExactEtudes
-Web based alternative to MOTU's ClockWorks.
+Web (or local file in browser) based alternative to MOTU's ClockWorks.
 
 <img width="500" height="400" alt="Screenshot" src="https://github.com/user-attachments/assets/9295c06e-377d-49c9-b467-ec2768ecd1b7" />
 
