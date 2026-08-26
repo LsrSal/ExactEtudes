@@ -21,7 +21,8 @@ Note: if file is not local but server hosted - must be HTTPS, unsecured HTTP doe
 Please try it with your MOTU or Opcode and report.
 
 (Anybody would like to donate some old MOTUs for further development?)
-
+_______________________________
+V3 fixed preset buttons colors, but not much of other testing done so far. Nothing else supposed to change.
 ___________________________________
 
 I may not be able to continue development on GitHub because of soon to be enforced here 2FA. Hopefully discussion/chat will not be affected.
