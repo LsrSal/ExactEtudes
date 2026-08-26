@@ -10,6 +10,7 @@
 - It supposed to work with any modern browser that support MIDI access. (Tested with Edge only.) Best to run from local disk, just drop it on your browser.
 - It has improved interface to be comfortable on stage and in studio. All settings are locally saved.
 - Has 8 sets of tables. Note that it does not use internal MOTU presets but store it locally and update routing as needed.
+- Fully editable interface names.
 - It appeared to be working with any vintage MTP, including MTP original, II and AV.
 - Tested with  AV: message can be sent through any interface, including, any MIDI port, old MAC port, or USB (on equipped models).
 - Tested with original MTP with ancient MAC serial interface (need an adapter, like my DURA_MIDI). May also work through MIDI ports.
