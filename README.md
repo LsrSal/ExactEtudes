@@ -25,9 +25,11 @@ Please try it with your MOTU or Opcode and report.
 
 (Anybody would like to donate some old MOTUs for further development?)
 _______________________________
-V3 fixed preset buttons colors, but not much of other testing done so far. Nothing else supposed to change.
+**_V3_** fixed preset buttons colors, but not much of other testing done so far. Nothing else supposed to change.
 
-V4  Removed log window and instead sent logs to browser's console. 
+**_V4_**  Removed log window and instead sent logs to browser's console. 
+
+**_II_alfalfa_**   Just an Etude. Getting better at it. But I like check_table better than those route lines. What do you think?
 ___________________________________
 
 I may not be able to continue development on GitHub because of soon to be enforced here 2FA. Hopefully discussion/chat will not be affected.
