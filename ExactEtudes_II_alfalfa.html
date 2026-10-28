@@ -1,0 +1,915 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>MIDI Timepiece AV - ClockWorks</title>
+<style>
+:root {
+  --window: #bcbcbc;
+  --panel: #d3d3d3;
+  --panel-light: #e7e7e7;
+  --panel-edge: #777;
+  --ink: #171717;
+  --green: #28ff39;
+  --green-dim: #14591b;
+  --screen: #111;
+  --blue: #70b7e5;
+  --line: #999;
+  --font: "Trebuchet MS", "Segoe UI", sans-serif;
+  --mono: "Lucida Console", Consolas, monospace;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  color: var(--ink);
+  background: #777;
+  font: 14px var(--font);
+}
+button, input, select { font: inherit; }
+button { cursor: pointer; }
+.app {
+  width: min(100%, 1120px);
+  min-height: 100vh;
+  margin: 0 auto;
+  background: var(--window);
+  border: 1px solid #444;
+  box-shadow: 0 0 30px #2228;
+}
+.titlebar {
+  min-height: 42px;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(#f7f7f7, #dadada);
+  border-bottom: 1px solid #888;
+  font-size: 16px;
+}
+.app-icon {
+  width: 25px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #ddd;
+  font: 700 9px var(--mono);
+  background: radial-gradient(circle at 35% 30%, #a3569b, #381540 72%);
+  border: 2px solid #5b5b5b;
+  box-shadow: inset 0 0 0 2px #c7a6ce;
+}
+.titlebar strong { font-weight: 500; }
+.window-actions { margin-left: auto; display: flex; gap: 18px; color: #555; }
+.menu-row { height: 28px; padding: 4px 12px; background: #f4f4f4; border-bottom: 1px solid #999; }
+.menu-button { border: 0; padding: 0 5px; background: transparent; color: #111; }
+.menu-wrap { position: relative; display: inline-block; }
+.menu-popover {
+  display: none;
+  position: absolute;
+  z-index: 20;
+  top: 24px;
+  left: -9px;
+  width: 245px;
+  padding: 6px;
+  background: #f2f2f2;
+  border: 1px solid #777;
+  box-shadow: 2px 4px 10px #0005;
+}
+.menu-popover.open { display: block; }
+.menu-popover button { display: flex; width: 100%; justify-content: space-between; padding: 8px; border: 0; background: transparent; text-align: left; }
+.menu-popover button:hover { background: #d9e8f4; }
+.menu-popover hr { border: 0; border-top: 1px solid #bbb; }
+.transport {
+  padding: 12px 16px 8px;
+  display: grid;
+  grid-template-columns: minmax(290px, 1fr) minmax(350px, 0.95fr);
+  gap: 14px;
+  background: linear-gradient(#c9c9c9, #858585 70%, #686868);
+  border-bottom: 2px solid #555;
+}
+.transport-left { min-width: 0; }
+.transport-buttons {
+  display: flex;
+  gap: 7px;
+  padding: 8px;
+  width: fit-content;
+  max-width: 100%;
+  background: #999;
+  border: 1px solid #777;
+  border-radius: 6px;
+  box-shadow: inset 0 1px 3px #eee;
+}
+.transport-button {
+  width: 58px;
+  height: 54px;
+  padding: 0;
+  color: #252525;
+  font: 700 22px var(--mono);
+  background: linear-gradient(#f1f1f1, #a4a4a4 55%, #cfcfcf);
+  border: 1px solid #555;
+  border-radius: 5px;
+  box-shadow: inset 0 1px 1px #fff, 0 1px 2px #333;
+  text-shadow: 0 1px #eee;
+}
+.transport-button:hover { filter: brightness(1.08); }
+.transport-button:active, .transport-button.active { background: linear-gradient(#bcbcbc, #777); box-shadow: inset 0 2px 4px #333; }
+.transport-button.record { color: #a50000; }
+.rom-version { margin: 7px 10px 0; color: #333; font-size: 12px; font-weight: 700; }
+.counter-wrap {
+  min-width: 0;
+  padding: 8px;
+  background: linear-gradient(#111, #383838);
+  border: 2px solid #252525;
+  border-radius: 7px;
+  box-shadow: inset 0 1px 4px #777;
+}
+.counter {
+  min-height: 43px;
+  padding: 1px 5px;
+  overflow: hidden;
+  color: var(--green);
+  background: #080d08;
+  border: 2px solid #555;
+  border-radius: 4px;
+  text-align: center;
+  font: 700 clamp(20px, 3vw, 34px)/1.2 var(--mono);
+  letter-spacing: 3px;
+  text-shadow: 0 0 8px #15f32c;
+}
+.locators { display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; padding-top: 6px; }
+.locator { padding: 2px; min-width: 0; text-align: center; color: #ddd; font-size: 11px; }
+.locator button { display: block; width: 24px; height: 22px; margin: 0 auto 2px; border: 1px solid #333; border-radius: 3px; background: linear-gradient(#999, #4a4a4a); }
+.locator button.active { background: #62bbdf; }
+.settings-strip {
+  min-height: 48px;
+  padding: 8px 18px;
+  display: grid;
+  grid-template-columns: 28px minmax(150px, 1.1fr) minmax(100px, 0.7fr) 28px minmax(125px, 0.8fr);
+  align-items: center;
+  gap: 12px;
+  color: #eee;
+  background: linear-gradient(#676767, #454545);
+  border-bottom: 1px solid #333;
+}
+.clock-mark { color: #f7e34a; font-size: 22px; text-align: center; text-shadow: 0 1px 2px #222; }
+.settings-strip select, .dark-input, .display-select {
+  min-width: 0;
+  min-height: 32px;
+  padding: 4px 8px;
+  color: var(--green);
+  background: linear-gradient(#111, #343434);
+  border: 1px solid #111;
+  border-radius: 3px;
+  box-shadow: inset 0 1px 3px #777;
+  font: 13px var(--mono);
+}
+.rec-light { width: 20px; height: 20px; border-radius: 50%; background: #e83a3a; border: 2px solid #922; box-shadow: inset 0 1px 3px #ffb; }
+.tabs {
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+  padding: 12px 12px 0;
+}
+.tab {
+  min-height: 42px;
+  padding: 7px 18px;
+  color: #202020;
+  border: 1px solid #777;
+  background: linear-gradient(#efefef, #bababa);
+  font-size: 15px;
+  box-shadow: inset 0 1px 0 #fff;
+}
+.tab:first-child { border-radius: 5px 0 0 5px; }
+.tab:last-child { border-radius: 0 5px 5px 0; }
+.tab:hover { background: linear-gradient(#f7f7f7, #ccc); }
+.tab.active { background: linear-gradient(#92d0f4, #5ca9da); box-shadow: inset 0 1px 4px #fff8; }
+.workspace { padding: 10px; }
+.panel {
+  min-height: 560px;
+  padding: 22px 24px;
+  background: linear-gradient(135deg, #d5d5d5, #c8c8c8 70%, #d2d2d2);
+  border: 1px solid #777;
+  border-radius: 7px;
+  box-shadow: inset 0 1px 3px #fff, 0 1px 3px #555;
+}
+.view { display: none; }
+.view.active { display: block; animation: appear .16s ease-out; }
+@keyframes appear { from { opacity: .7; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
+.view-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 22px; }
+.view-head h1 { margin: 0; font-size: 19px; font-weight: 500; }
+.view-head p { margin: 4px 0 0; color: #555; font-size: 12px; }
+.classic-button {
+  min-height: 34px;
+  padding: 5px 15px;
+  color: #1b1b1b;
+  background: linear-gradient(#fff, #bdbdbd);
+  border: 1px solid #666;
+  border-radius: 4px;
+  box-shadow: inset 0 1px 0 #fff, 0 1px 2px #888;
+}
+.classic-button:hover { filter: brightness(1.05); }
+.classic-button:active { box-shadow: inset 0 1px 4px #666; }
+.dark-input { width: 100%; min-height: 30px; }
+.field { display: grid; gap: 5px; color: #333; }
+.field > span { font-size: 13px; }
+.field select, .field input:not([type="checkbox"]):not([type="range"]) { min-height: 32px; }
+.route-board { overflow-x: auto; padding: 8px; background: #212121; border: 2px solid #111; box-shadow: inset 0 0 0 1px #555; user-select: none; -webkit-user-select: none; }
+.route-svg { display: block; width: 100%; min-width: 720px; height: auto; touch-action: none; user-select: none; -webkit-user-select: none; }
+.route-wire { fill: none; stroke: #64c7f5; stroke-width: 3; pointer-events: stroke; }
+.route-wire:hover { stroke: #b7ebff; stroke-width: 5; }
+.route-wire.selected { stroke: #36f23f; stroke-width: 4; }
+.route-preview { stroke: #f3ed38; stroke-width: 2.5; stroke-dasharray: none; pointer-events: none; }
+.route-node { cursor: crosshair; outline: none; user-select: none; -webkit-user-select: none; }
+.route-node .icon-shape { fill: #202820; stroke: #36f23f; stroke-width: 2; }
+.route-node .icon-pin { fill: #36f23f; stroke: none; }
+.route-node:hover .icon-shape, .route-node:focus .icon-shape { stroke: #c6ffc9; }
+.route-node:hover .icon-pin, .route-node:focus .icon-pin { fill: #c6ffc9; }
+.route-node .select-mark { display: none; fill: none; stroke: #36f23f; stroke-width: 2; pointer-events: none; }
+.route-node.selected .select-mark { display: block; }
+.route-node .icon-key { fill: none; stroke: #202820; stroke-width: 3; }
+.route-node text { fill: var(--green); font: 18px var(--mono); dominant-baseline: middle; pointer-events: none; }
+.route-node:hover text, .route-node:focus text { fill: #c6ffc9; }
+.route-toggle, .tiny-toggle {
+  appearance: none;
+  margin: 0 auto;
+  display: block;
+  width: 100%;
+  max-width: 48px;
+  aspect-ratio: 1;
+  background: linear-gradient(#111, #343434);
+  border: 1px solid #050505;
+  border-radius: 4px;
+  box-shadow: inset 0 1px 3px #888;
+  cursor: pointer;
+}
+.route-toggle:checked, .tiny-toggle:checked { background: var(--green); box-shadow: 0 0 7px #13f128, inset 0 0 0 3px #176220; }
+.route-toggle:focus-visible, .tiny-toggle:focus-visible { outline: 2px solid #168ac4; outline-offset: 2px; }
+.route-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 15px; color: #333; font-size: 12px; }
+.preset-layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(250px, .85fr); gap: 26px; }
+.preset-table { width: 100%; border-collapse: separate; border-spacing: 0 9px; }
+.preset-table th { padding: 0 6px 2px; color: #444; text-align: left; font-weight: 500; }
+.preset-table td { padding: 0 5px; }
+.preset-table td:first-child { width: 30px; }
+.preset-table td:last-child { width: 78px; }
+.preset-slot { display: flex; align-items: center; gap: 10px; }
+.patch-number { width: 74px; text-align: center; }
+.preset-note { align-self: start; padding: 12px; color: #4a4a4a; background: #c3c3c3; border-left: 3px solid #777; font-size: 12px; line-height: 1.5; }
+.tiny-toggle { width: 17px; height: 17px; border-radius: 3px; }
+.mapping-controls { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.mapping-grid { display: grid; grid-template-columns: repeat(2, minmax(280px, 1fr)); grid-template-rows: repeat(8, auto); grid-auto-flow: column; gap: 0 30px; }
+.mapping-row { display: grid; grid-template-columns: 50px 1fr; gap: 9px; align-items: center; min-height: 42px; }
+.mapping-row label { color: #333; }
+.mapping-cells { display: grid; grid-template-columns: repeat(16, 1fr); gap: 3px; }
+.mapping-cells .tiny-toggle { width: 100%; max-width: 19px; }
+.mapping-hint { display: flex; justify-content: space-between; margin: 0 2px 6px 59px; color: #555; font-size: 10px; }
+.log-bar { display: flex; align-items: center; gap: 8px; min-height: 34px; padding: 6px 14px; color: #ddd; background: #3d3d3d; border-top: 1px solid #222; font-size: 11px; }
+.connection-dot { width: 9px; height: 9px; flex: 0 0 auto; border-radius: 50%; background: #bc3030; border: 1px solid #6c1111; }
+.connection-dot.ready { background: #23bb49; border-color: #17662a; }
+.log-message { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dialog-backdrop { display: none; position: fixed; z-index: 50; inset: 0; padding: 20px; align-items: center; justify-content: center; background: #0007; }
+.dialog-backdrop.open { display: flex; }
+.dialog { width: min(100%, 480px); padding: 20px; background: #d2d2d2; border: 1px solid #555; box-shadow: 0 8px 24px #0008; }
+.dialog h2 { margin: 0 0 12px; font-size: 18px; font-weight: 500; }
+.dialog p { color: #444; font-size: 13px; line-height: 1.5; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+@media (max-width: 760px) {
+  .tabs { justify-content: flex-start; overflow-x: auto; }
+  .tab { flex: 0 0 auto; padding-inline: 12px; font-size: 13px; }
+  .panel { padding: 17px 13px; }
+  .preset-layout { grid-template-columns: 1fr; }
+  .mapping-grid { grid-template-columns: 1fr; grid-template-rows: none; grid-auto-flow: row; }
+}
+@media (max-width: 440px) {
+  .view-head { align-items: flex-start; flex-direction: column; }
+}
+</style>
+</head>
+<body>
+<main class="app" aria-label="MIDI Timepiece AV ClockWorks">
+  <header class="titlebar">
+    <span class="app-icon" aria-hidden="true">MTP</span>
+    <strong>MIDI Timepiece AV</strong>
+    <div class="window-actions" aria-hidden="true"><span>_</span><span>[]</span><span>X</span></div>
+  </header>
+  <div class="menu-row">
+    <div class="menu-wrap">
+      <button class="menu-button" id="fileMenuButton" aria-expanded="false">File</button>
+      <div class="menu-popover" id="fileMenu" role="menu">
+        <button data-action="save" role="menuitem">Save Configuration... <span>Ctrl+S</span></button>
+        <button data-action="load" role="menuitem">Load Configuration... <span>Ctrl+O</span></button>
+        <hr>
+        <button data-action="refresh" role="menuitem">Refresh <span>Ctrl+R</span></button>
+        <button data-action="panic" role="menuitem">MIDI Panic</button>
+        <hr>
+        <button data-action="midi" role="menuitem">MIDI Output Settings...</button>
+      </div>
+    </div>
+  </div>
+  <nav class="tabs" role="tablist" aria-label="ClockWorks sections">
+    <button class="tab active" role="tab" aria-selected="true" data-view="routing">Routings</button>
+    <button class="tab" role="tab" aria-selected="false" data-view="presets">Presets</button>
+    <button class="tab" role="tab" aria-selected="false" data-view="mappings">Mappings</button>
+  </nav>
+  <div class="workspace">
+    <section class="panel view active" id="view-routing" role="tabpanel" aria-labelledby="tab-routing">
+      <div class="view-head">
+        <div><h1>Routings</h1><p>Connect each MIDI input to one or more output cables.</p></div>
+      </div>
+      <div class="route-board"><svg class="route-svg" id="routeSvg" viewBox="0 0 900 365" role="group" aria-label="MIDI routing connections"></svg></div>
+      <div class="route-footer"><span id="routeCount">0 connections</span></div>
+    </section>
+    <section class="panel view" id="view-presets" role="tabpanel" hidden>
+      <div class="view-head">
+        <div><h1>Presets</h1><p>Eight setup slots stored in this configuration file.</p></div>
+      </div>
+      <div class="preset-layout">
+        <table class="preset-table"><thead><tr><th></th><th>User Presets</th><th></th></tr></thead><tbody id="presetRows"></tbody></table>
+        <aside class="preset-note">Preset names are sent to the MTP when changed. Select a slot to load it, or use Save to store the current routes and channel mappings in that slot.</aside>
+      </div>
+    </section>
+    <section class="panel view" id="view-mappings" role="tabpanel" hidden>
+      <div class="view-head"><div><h1>Mappings</h1><p>Remap incoming or outgoing MIDI channels for a selected cable.</p></div><button class="classic-button" id="mappingDefault">Default</button></div>
+      <div class="mapping-controls">
+        <label class="field"><span>Direction</span><select id="mappingDirection"><option value="input">Input</option><option value="output">Output</option></select></label>
+        <span>on</span>
+        <label class="field"><span>Cable</span><select id="mappingCable"></select></label>
+      </div>
+      <div class="mapping-hint"><span>Input channel</span><span>Mapped to channel</span></div>
+      <div class="mapping-grid" id="mappingGrid"></div>
+      <div class="route-footer"><span>Green square indicates the destination channel. Changes are sent immediately.</span></div>
+    </section>
+  </div>
+  <footer class="log-bar"><span class="connection-dot" id="connectionDot"></span><span id="connectionStatus">Checking Web MIDI...</span><span class="log-message" id="statusMessage">Choose a MIDI output to control the connected MTP-AV.</span></footer>
+</main>
+<input type="file" id="configFile" accept=".json,application/json" hidden>
+<div class="dialog-backdrop" id="midiDialog" role="dialog" aria-modal="true" aria-labelledby="midiDialogTitle">
+  <div class="dialog"><h2 id="midiDialogTitle">MIDI Output</h2><p>Select the single MIDI cable connected to the Timepiece AV. SysEx permission is requested to enable configuration commands.</p>
+    <label class="field"><span>Output cable</span><select id="midiOutput"><option value="">No MIDI outputs detected</option></select></label>
+    <p id="midiSupportNote">Web MIDI is available in Microsoft Edge. When opened as a local file, permission may need to be granted again after browser settings change.</p>
+    <div class="dialog-actions"><button class="classic-button" id="refreshMidi">Rescan</button><button class="classic-button" id="closeMidi">Close</button><button class="classic-button" id="connectMidi">Connect</button></div>
+  </div>
+</div>
+<script>
+(() => {
+  "use strict";
+  const STORE_KEY = "clockworks-mtpav-intermediate-config-v1";
+  const PORT_KEY = "clockworks-mtpav-midi-port";
+  const labels = ["Setup 1", "Setup 2", "Setup 3", "Setup 4", "Setup 5", "Setup 6", "Setup 7", "Setup 8"];
+  const initialConfig = {
+    version: 1,
+    activeView: "routing",
+    activePreset: 0,
+    routeLinks: [],
+    routes: Array.from({ length: 8 }, (_, input) => Array.from({ length: 8 }, (_, output) => input === output)),
+    presets: labels.map(name => ({ name, snapshot: null })),
+    mappings: {},
+    panelState: { mappingDirection: "input", mappingCable: "0" }
+  };
+  let config = loadConfig();
+  let midiAccess = null;
+  let outputPort = null;
+  let activeSetup = Number(config.activePreset) || 0;
+  let selectedRoutePort = null;
+  let dragRoutePort = null;
+  let selectedRouteLinks = [];
+  let suppressRouteClick = false;
+  const routeSources = ["", ...Array.from({ length: 8 }, (_, index) => `In ${index + 1}`)];
+  const routeDestinations = ["", ...Array.from({ length: 8 }, (_, index) => `Out ${index + 1}`)];
+  const $ = (selector, root = document) => root.querySelector(selector);
+  const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+
+  function loadConfig() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORE_KEY));
+      return saved && typeof saved === "object" ? { ...structuredClone(initialConfig), ...saved } : structuredClone(initialConfig);
+    } catch { return structuredClone(initialConfig); }
+  }
+  function saveConfig() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(config)); }
+    catch { setStatus("Browser storage is unavailable; use Save Configuration to keep a copy.", true); }
+  }
+  function setStatus(message, error = false) {
+    $("#statusMessage").textContent = message;
+    $("#statusMessage").style.color = error ? "#ff7777" : "";
+  }
+  function hex(bytes) { return bytes.map(value => value.toString(16).padStart(2, "0").toUpperCase()).join(" "); }
+  function transmit(bytes, label) {
+    if (!outputPort) {
+      setStatus("Select a MIDI output before sending commands.", true);
+      openMidiDialog();
+      return false;
+    }
+    try {
+      outputPort.send(bytes);
+      setStatus(`${label} sent: ${hex(bytes)}`);
+      return true;
+    } catch (error) {
+      setStatus(`MIDI send failed: ${error.message}`, true);
+      return false;
+    }
+  }
+  function sendRoutingRow(input) {
+    const links = config.routeLinks.filter(link => link.source === input + 1);
+    if (links.some(link => link.destination < 1 || link.destination > 8)) {
+      setStatus(`Input ${input + 1} has a Computer, ADAT, MMC, or MTC route; saved locally because the cable routing packet cannot encode that destination.`, true);
+      return false;
+    }
+    const destinations = links.map(link => link.destination - 1);
+    const mask = destinations.reduce((value, output) => output < 7 ? value | (1 << (6 - output)) : value, 0);
+    const out8 = destinations.includes(7) ? 0x40 : 0;
+    return transmit([0xF0, 0x00, 0x00, 0x33, 0x02, 0x0A, input, mask, out8, 0x10, 0xF7], `Input ${input + 1} routing`);
+  }
+  function setupRouting() {
+    if (!Array.isArray(config.routeLinks)) {
+      config.routeLinks = [];
+      config.routes?.forEach((row, input) => row.forEach((enabled, output) => {
+        if (enabled) config.routeLinks.push({ source: input + 1, destination: output + 1 });
+      }));
+    }
+    const routableLinks = config.routeLinks.filter(link => link.source >= 1 && link.source <= 8 && link.destination >= 1 && link.destination <= 8);
+    if (routableLinks.length !== config.routeLinks.length) {
+      config.routeLinks = routableLinks;
+      saveConfig();
+    }
+    const svg = $("#routeSvg");
+    Array.from(svg.children).filter(child => !child.classList.contains("route-preview")).forEach(child => child.remove());
+    const svgElement = (name, attributes = {}) => {
+      const element = document.createElementNS("http://www.w3.org/2000/svg", name);
+      Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, value));
+      return element;
+    };
+    const routeY = index => 30 + index * 43;
+    const routeNodeY = (side, index) => routeY(index - 1) + (side === "destination" ? 10 : 0);
+    const routeTrackX = source => 325 + source * 25;
+    const routePath = (source, destination) => {
+      const sourceY = routeY(source - 1);
+      const destinationY = routeNodeY("destination", destination);
+      const trackX = routeTrackX(source);
+      const radius = source === destination ? 3 : 8;
+      const verticalStart = sourceY + Math.sign(destinationY - sourceY) * radius;
+      const verticalEnd = destinationY - Math.sign(destinationY - sourceY) * radius;
+      return `M 255 ${sourceY} H ${trackX - radius} Q ${trackX} ${sourceY} ${trackX} ${verticalStart} V ${verticalEnd} Q ${trackX} ${destinationY} ${trackX + radius} ${destinationY} H 655`;
+    };
+    const toSvgPoint = event => {
+      const point = svg.createSVGPoint();
+      point.x = event.clientX;
+      point.y = event.clientY;
+      return point.matrixTransform(svg.getScreenCTM().inverse());
+    };
+    const drawWires = () => {
+      $$(".route-wire:not(.route-preview)", svg).forEach(wire => wire.remove());
+      config.routeLinks.forEach(link => {
+        const path = svgElement("path", { class: `route-wire${selectedRouteLinks.includes(link) ? " selected" : ""}`, d: routePath(link.source, link.destination), tabindex: "0", role: "button", "aria-label": `Select ${routeSources[link.source]} to ${routeDestinations[link.destination]} connection` });
+        path.addEventListener("click", () => {
+          selectedRouteLinks = [link];
+          selectedRoutePort = null;
+          $$(".route-node", svg).forEach(node => node.classList.remove("selected"));
+          drawWires();
+          setStatus(`Selected ${routeSources[link.source]} to ${routeDestinations[link.destination]}; press Delete to remove.`);
+        });
+        svg.insertBefore(path, svg.firstChild);
+      });
+    };
+    const connect = (source, destination) => {
+      if (config.routeLinks.some(link => link.source === source && link.destination === destination)) return;
+      config.routeLinks.push({ source, destination });
+      selectedRoutePort = null;
+      selectedRouteLinks = [];
+      $$(".route-node", svg).forEach(node => node.classList.remove("selected"));
+      $$(".route-wire", svg).forEach(wire => wire.classList.remove("selected"));
+      saveConfig(); drawWires(); updateRouteCount();
+      if (source >= 1 && source <= 8) sendRoutingRow(source - 1);
+    };
+    const createNode = (side, index, label) => {
+      const isSource = side === "source";
+      const pointX = isSource ? 245 : 665;
+      const textX = isSource ? 220 : 685;
+      const iconType = index === 0 ? "computer" : index <= 8 ? "din" : label.toLowerCase();
+      const group = svgElement("g", { class: "route-node", "data-side": side, "data-index": index, transform: `translate(0 ${routeNodeY(side, index)})`, tabindex: "0", role: "button", "aria-label": `${isSource ? "Source" : "Destination"}: ${label}` });
+      const icon = svgElement("g", { transform: `translate(${pointX} 0)` });
+      const shape = (name, attributes) => svgElement(name, { class: "icon-shape", ...attributes });
+      const pin = (cx, cy) => svgElement("circle", { class: "icon-pin", cx, cy, r: 1.35 });
+      if (iconType === "din") {
+        icon.append(shape("circle", { cx: 0, cy: 0, r: 10, fill: "none" }));
+        [[-5, 0], [-3.536, -3.536], [0, -5], [3.536, -3.536], [5, 0]].forEach(([x, y]) => icon.append(pin(x, y)));
+        icon.append(svgElement("path", { class: "icon-key", d: "M 0 10 V 7" }));
+      } else if (iconType === "computer") {
+        icon.append(shape("rect", { x: -11, y: -8, width: 16, height: 12, rx: 1 }));
+        icon.append(shape("path", { d: "M -6 7 H 1 M -2 4 V 7 M 8 -6 H 13 V 3 H 8 Z" }));
+      } else if (iconType === "adat") {
+        icon.append(shape("rect", { x: -11, y: -5, width: 20, height: 10, rx: 1 }));
+        icon.append(shape("path", { d: "M -7 -2 H 4 M -7 2 H 4" }));
+        icon.append(pin(6, 0));
+      } else if (iconType === "mmc") {
+        icon.append(shape("rect", { x: -10, y: -6, width: 8, height: 12, rx: 1 }));
+        icon.append(shape("path", { d: "M 1 -6 L 10 0 L 1 6 Z" }));
+      } else {
+        icon.append(shape("circle", { cx: 0, cy: 0, r: 10, fill: "none" }));
+        icon.append(shape("path", { d: "M 0 -6 V 0 L 5 3" }));
+      }
+      group.append(icon);
+      group.append(svgElement("rect", { class: "select-mark", x: pointX - 15, y: -15, width: 30, height: 30, rx: 1 }));
+      const text = svgElement("text", { x: textX, y: 1, "text-anchor": isSource ? "end" : "start" });
+      text.textContent = label;
+      group.append(text);
+      svg.append(group);
+    };
+    routeSources.forEach((label, index) => { if (label) createNode("source", index, label); });
+    routeDestinations.forEach((label, index) => { if (label) createNode("destination", index, label); });
+    drawWires();
+    const nodeAt = event => event.target instanceof Element ? event.target.closest(".route-node") : null;
+    const preview = $(".route-preview", svg) || svgElement("path", { class: "route-wire route-preview", visibility: "hidden" });
+    if (!preview.isConnected) svg.append(preview);
+    preview.setAttribute("visibility", "hidden");
+    const portPoint = port => ({ x: port.side === "source" ? 255 : 655, y: routeNodeY(port.side, port.index) });
+    const selectPort = port => {
+      selectedRoutePort = port;
+      selectedRouteLinks = config.routeLinks.filter(link => port.side === "source" ? link.source === port.index : link.destination === port.index);
+      drawWires();
+      $$(".route-node", svg).forEach(node => node.classList.toggle("selected", node.dataset.side === port.side && Number(node.dataset.index) === port.index));
+      const routesMessage = selectedRouteLinks.length ? ` ${selectedRouteLinks.length} connected route${selectedRouteLinks.length === 1 ? "" : "s"} selected; press Delete to remove.` : " No connected routes.";
+      setStatus(`Selected ${port.side === "source" ? routeSources[port.index] : routeDestinations[port.index]}.${routesMessage}`);
+    };
+    const connectPorts = (first, second) => {
+      if (first.side === second.side) { selectPort(second); return; }
+      const source = first.side === "source" ? first.index : second.index;
+      const destination = first.side === "destination" ? first.index : second.index;
+      connect(source, destination);
+    };
+    if (!svg.dataset.bound) {
+      svg.addEventListener("click", event => {
+        if (suppressRouteClick) { suppressRouteClick = false; return; }
+        const node = nodeAt(event);
+        if (!node) return;
+        const port = { side: node.dataset.side, index: Number(node.dataset.index) };
+        if (selectedRoutePort) connectPorts(selectedRoutePort, port);
+        else selectPort(port);
+      });
+      svg.addEventListener("pointerdown", event => {
+        const node = nodeAt(event);
+        if (!node) return;
+        dragRoutePort = { side: node.dataset.side, index: Number(node.dataset.index) };
+        if (!selectedRoutePort || selectedRoutePort.side === dragRoutePort.side) selectPort(dragRoutePort);
+        const start = portPoint(dragRoutePort);
+        const previewPath = $(".route-preview", svg);
+        previewPath.setAttribute("d", `M ${start.x} ${start.y} L ${start.x} ${start.y}`);
+        previewPath.setAttribute("visibility", "visible");
+        const point = toSvgPoint(event);
+        previewPath.setAttribute("d", `M ${start.x} ${start.y} L ${point.x} ${point.y}`);
+        try { svg.setPointerCapture(event.pointerId); } catch {}
+      });
+      document.addEventListener("pointermove", event => {
+        if (dragRoutePort === null) return;
+        const start = portPoint(dragRoutePort);
+        const point = toSvgPoint(event);
+        const previewPath = $(".route-preview", svg);
+        previewPath.setAttribute("d", `M ${start.x} ${start.y} L ${point.x} ${point.y}`);
+        previewPath.setAttribute("visibility", "visible");
+      });
+      document.addEventListener("pointerup", event => {
+        if (dragRoutePort === null) return;
+        const releaseTarget = document.elementFromPoint(event.clientX, event.clientY);
+        const node = releaseTarget instanceof Element ? releaseTarget.closest(".route-node") : null;
+        const start = dragRoutePort;
+        if (node && node.dataset.side !== start.side) {
+          connectPorts(start, { side: node.dataset.side, index: Number(node.dataset.index) });
+          suppressRouteClick = true;
+        } else if (!selectedRoutePort || selectedRoutePort.side === start.side) selectPort(start);
+        dragRoutePort = null;
+        $(".route-preview", svg).setAttribute("visibility", "hidden");
+      });
+      document.addEventListener("pointercancel", () => {
+        dragRoutePort = null;
+        $(".route-preview", svg).setAttribute("visibility", "hidden");
+      });
+      svg.addEventListener("keydown", event => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        const node = nodeAt(event);
+        if (!node) return;
+        event.preventDefault();
+        node.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      });
+      svg.dataset.bound = "true";
+    }
+    updateRouteCount();
+  }
+  function updateRouteCount() {
+    const count = config.routeLinks.length;
+    $("#routeCount").textContent = `${count} connection${count === 1 ? "" : "s"}`;
+  }
+  function captureLocalSettings() {
+    return structuredClone({
+      routeLinks: config.routeLinks,
+      mappings: config.mappings
+    });
+  }
+  function applyLocalSettings(snapshot, index) {
+    config = { ...config, ...structuredClone(snapshot), activePreset: index, activeView: "routing" };
+    activeSetup = index;
+    saveConfig();
+    setupRouting();
+    setupMappings();
+    setupPresets();
+    switchView("routing");
+  }
+  function writePresetName(index) {
+    const asciiName = config.presets[index].name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\x20-\x7E]/g, "?").slice(0, 12).padEnd(12, " ");
+    const nameBytes = Array.from(asciiName, character => character.charCodeAt(0));
+    return transmit([0xF0, 0x00, 0x00, 0x33, 0x07, 0x20, 0x00, 0x00, index + 1, 0x00, ...nameBytes, 0xF7], `Save Base Setup ${index + 1} name`);
+  }
+  function sendAllMappings() {
+    for (const direction of ["input", "output"]) {
+      for (let cable = 0; cable < 8; cable++) {
+        if (!transmitMapping(direction, cable)) return false;
+      }
+    }
+    return true;
+  }
+  function writePresetToDevice(index) {
+    if (config.routeLinks.some(link => link.source < 1 || link.source > 8 || link.destination < 1 || link.destination > 8)) {
+      setStatus("Preset saved locally; MTP write skipped because it contains non-cable routes.", true);
+      return false;
+    }
+    if (!transmit([0xF0, 0x00, 0x00, 0x33, 0x07, 0x22, 0x00, 0x00, index + 1, 0xF7], `Select Base Setup ${index + 1}`)) return false;
+    for (let input = 0; input < 8; input++) {
+      if (!sendRoutingRow(input)) return false;
+    }
+    if (!writePresetName(index)) return false;
+    return sendAllMappings();
+  }
+  function savePreset(index, name) {
+    config.presets[index] = {
+      ...config.presets[index],
+      name: name.slice(0, 12),
+      snapshot: captureLocalSettings()
+    };
+    activeSetup = index;
+    config.activePreset = index;
+    saveConfig();
+    setupPresets();
+    const written = writePresetToDevice(index);
+    setStatus(written ? `Preset ${index + 1} saved locally and to the MTP.` : `Preset ${index + 1} saved locally; MTP write did not complete.`, !written);
+  }
+  function recallPreset(index) {
+    const preset = config.presets[index];
+    if (!preset.snapshot) preset.snapshot = captureLocalSettings();
+    config.activePreset = index;
+    saveConfig();
+    applyLocalSettings(preset.snapshot, index);
+    const written = writePresetToDevice(index);
+    setStatus(written ? `Preset ${index + 1} loaded locally and into the MTP.` : `Preset ${index + 1} loaded locally; MTP write did not complete.`, !written);
+  }
+  function setupPresets() {
+    const rows = $("#presetRows");
+    rows.replaceChildren();
+    config.presets.forEach((preset, index) => {
+      const row = document.createElement("tr");
+      row.innerHTML = `<td><input type="radio" name="activePreset" aria-label="Select preset ${index + 1}" ${activeSetup === index ? "checked" : ""}></td><td><input class="dark-input preset-name" maxlength="12" aria-label="Preset ${index + 1} name"></td><td><button class="classic-button preset-save">Save</button></td>`;
+      const name = $(".preset-name", row);
+      name.value = preset.name;
+      name.addEventListener("change", () => {
+        config.presets[index].name = name.value.slice(0, 12);
+        name.value = config.presets[index].name;
+        saveConfig();
+        writePresetName(index);
+      });
+      $("input[type=radio]", row).addEventListener("change", () => {
+        recallPreset(index);
+      });
+      $(".preset-save", row).addEventListener("click", () => {
+        savePreset(index, name.value);
+      });
+      rows.append(row);
+    });
+  }
+  function setupMappings() {
+    const cable = $("#mappingCable");
+    cable.innerHTML = Array.from({ length: 8 }, (_, index) => `<option value="${index}">Cable ${index + 1}</option>`).join("");
+    for (const direction of ["input", "output"]) {
+      for (let index = 0; index < 8; index++) {
+        const key = mappingKey(direction, index);
+        if (!Array.isArray(config.mappings[key])) config.mappings[key] = Array.from({ length: 16 }, (_, channelIndex) => channelIndex);
+      }
+    }
+    renderMappings();
+  }
+  function mappingKey(direction, cable) { return `${direction}-${cable}`; }
+  function renderMappings() {
+    const direction = $("#mappingDirection").value;
+    const cable = Number($("#mappingCable").value || 0);
+    const key = mappingKey(direction, cable);
+    if (!config.mappings[key]) config.mappings[key] = Array.from({ length: 16 }, (_, index) => index);
+    const grid = $("#mappingGrid");
+    grid.replaceChildren();
+    for (let input = 0; input < 16; input++) {
+      const row = document.createElement("div");
+      row.className = "mapping-row";
+      const label = document.createElement("label");
+      label.textContent = `Ch ${input + 1}`;
+      label.htmlFor = `map-${input}`;
+      const cells = document.createElement("div");
+      cells.className = "mapping-cells";
+      for (let output = 0; output < 16; output++) {
+        const toggle = document.createElement("input");
+        toggle.type = "radio";
+        toggle.name = `map-${input}`;
+        toggle.className = "tiny-toggle";
+        toggle.checked = config.mappings[key][input] === output;
+        toggle.setAttribute("aria-label", `Channel ${input + 1} mapped to channel ${output + 1}`);
+        toggle.addEventListener("change", () => {
+          config.mappings[key][input] = output;
+          saveConfig();
+          sendMapping(direction, cable);
+        });
+        cells.append(toggle);
+      }
+      row.append(label, cells);
+      grid.append(row);
+    }
+  }
+  function sendMapping(direction = $("#mappingDirection").value, cable = Number($("#mappingCable").value || 0)) {
+    return transmitMapping(direction, cable);
+  }
+  function transmitMapping(direction, cable) {
+    const map = config.mappings[mappingKey(direction, cable)] || Array.from({ length: 16 }, (_, index) => index);
+    return transmit([0xF0, 0x00, 0x00, 0x33, 0x02, direction === "input" ? 0x04 : 0x05, cable, ...map, 0xF7], `${direction} cable ${cable + 1} channel mapping`);
+  }
+  function sendPanic() {
+    if (!outputPort) { openMidiDialog(); setStatus("Select a MIDI output before sending panic.", true); return; }
+    transmit([0xF0, 0x00, 0x00, 0x33, 0x02, 0x10, 0x00, 0x00, 0x00, 0xF7], "MTP-AV Notes Off panic");
+    transmit([0xF0, 0x00, 0x00, 0x33, 0x02, 0x10, 0x00, 0x00, 0x01, 0xF7], "MTP-AV All Notes Off panic");
+  }
+  function switchView(view) {
+    if (!$(`#view-${view}`)) return;
+    $$(".tab").forEach(tab => {
+      const selected = tab.dataset.view === view;
+      tab.classList.toggle("active", selected);
+      tab.setAttribute("aria-selected", String(selected));
+    });
+    $$(".view").forEach(panel => {
+      const selected = panel.id === `view-${view}`;
+      panel.classList.toggle("active", selected);
+      panel.hidden = !selected;
+    });
+    config.activeView = view;
+    saveConfig();
+  }
+  function openMidiDialog() {
+    $("#midiDialog").classList.add("open");
+    if (!midiAccess && navigator.requestMIDIAccess) requestMidiAccess();
+  }
+  function updateMidiPorts() {
+    const select = $("#midiOutput");
+    const savedId = localStorage.getItem(PORT_KEY) || "";
+    const outputs = midiAccess ? [...midiAccess.outputs.values()] : [];
+    select.innerHTML = outputs.length ? `<option value="">Select a MIDI output...</option>` : `<option value="">No MIDI outputs detected</option>`;
+    for (const output of outputs) {
+      const option = document.createElement("option");
+      option.value = output.id;
+      option.textContent = output.name || `MIDI Output ${outputs.indexOf(output) + 1}`;
+      option.selected = output.id === savedId;
+      select.append(option);
+    }
+    if (savedId && outputs.some(output => output.id === savedId)) {
+      select.value = savedId;
+      outputPort = midiAccess.outputs.get(savedId);
+    } else if (outputPort && !midiAccess?.outputs.has(outputPort.id)) outputPort = null;
+    updateConnectionStatus();
+    if (!outputPort) $("#midiDialog").classList.add("open");
+  }
+  function updateConnectionStatus() {
+    const hasOutput = Boolean(outputPort);
+    $("#connectionDot").classList.toggle("ready", hasOutput);
+    $("#connectionStatus").textContent = hasOutput ? `MIDI: ${outputPort.name || "Connected"}` : midiAccess ? "MIDI ready - no output selected" : "MIDI unavailable";
+  }
+  async function requestMidiAccess() {
+    if (!navigator.requestMIDIAccess) {
+      $("#connectionStatus").textContent = "Web MIDI unsupported";
+      $("#midiSupportNote").textContent = "This browser does not expose Web MIDI. Open this file in Microsoft Edge and allow MIDI access.";
+      setStatus("Web MIDI API is not available in this browser.", true);
+      return;
+    }
+    try {
+      midiAccess = await navigator.requestMIDIAccess({ sysex: true });
+      midiAccess.onstatechange = updateMidiPorts;
+      updateMidiPorts();
+      setStatus("MIDI ports scanned. Choose the output connected to your Timepiece AV.");
+    } catch (error) {
+      $("#connectionStatus").textContent = "MIDI permission required";
+      setStatus(`Could not access Web MIDI with SysEx: ${error.message}`, true);
+      $("#midiDialog").classList.add("open");
+    }
+  }
+  function connectMidi() {
+    const id = $("#midiOutput").value;
+    outputPort = id && midiAccess ? midiAccess.outputs.get(id) || null : null;
+    if (outputPort) {
+      localStorage.setItem(PORT_KEY, id);
+      $("#midiDialog").classList.remove("open");
+      setStatus(`Connected to ${outputPort.name || "MIDI output"}.`);
+    } else setStatus("Choose an available MIDI output first.", true);
+    updateConnectionStatus();
+  }
+  function exportConfig() {
+    const blob = new Blob([JSON.stringify(config, null, 2)], { type: "application/json" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "mtp-av-configuration.json";
+    link.click();
+    URL.revokeObjectURL(link.href);
+    setStatus("Configuration exported.");
+  }
+  function importConfig(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const imported = JSON.parse(String(reader.result));
+        if (!imported || !Array.isArray(imported.routes) || imported.routes.length !== 8 || !Array.isArray(imported.presets) || imported.presets.length !== 8) throw new Error("Configuration structure is not recognized.");
+        config = { ...structuredClone(initialConfig), ...imported };
+        saveConfig();
+        setupRouting(); setupMappings(); setupPresets();
+        switchView(config.activeView || "routing");
+        setStatus(`Loaded configuration from ${file.name}.`);
+      } catch (error) { setStatus(`Could not load configuration: ${error.message}`, true); }
+    };
+    reader.readAsText(file);
+  }
+  function restoreInitialSettings() {
+    if (config.panelState?.mappingDirection) $("#mappingDirection").value = config.panelState.mappingDirection;
+    if (config.panelState?.mappingCable) $("#mappingCable").value = config.panelState.mappingCable;
+    renderMappings();
+    switchView(config.activeView || "routing");
+  }
+  function bindEvents() {
+    $$(".tab").forEach(tab => tab.addEventListener("click", () => switchView(tab.dataset.view)));
+    $("#mappingDirection").addEventListener("change", renderMappings);
+    $("#mappingCable").addEventListener("change", renderMappings);
+    [$("#mappingDirection"), $("#mappingCable")].forEach(control => control.addEventListener("change", () => {
+      config.panelState[control.id] = control.value;
+      saveConfig();
+    }));
+    $("#mappingDefault").addEventListener("click", () => {
+      const key = mappingKey($("#mappingDirection").value, Number($("#mappingCable").value || 0));
+      config.mappings[key] = Array.from({ length: 16 }, (_, index) => index);
+      saveConfig(); renderMappings(); sendMapping();
+    });
+    $("#fileMenuButton").addEventListener("click", () => {
+      const menu = $("#fileMenu");
+      menu.classList.toggle("open");
+      $("#fileMenuButton").setAttribute("aria-expanded", String(menu.classList.contains("open")));
+    });
+    $("#fileMenu").addEventListener("click", event => {
+      const action = event.target.closest("[data-action]")?.dataset.action;
+      if (!action) return;
+      $("#fileMenu").classList.remove("open");
+      if (action === "save") exportConfig();
+      if (action === "load") $("#configFile").click();
+      if (action === "refresh") { setupRouting(); setupMappings(); if (midiAccess) updateMidiPorts(); setStatus("Interface refreshed."); }
+      if (action === "panic") sendPanic();
+      if (action === "midi") openMidiDialog();
+    });
+    $("#configFile").addEventListener("change", event => { if (event.target.files?.[0]) importConfig(event.target.files[0]); event.target.value = ""; });
+    $("#refreshMidi").addEventListener("click", requestMidiAccess);
+    $("#connectMidi").addEventListener("click", connectMidi);
+    $("#closeMidi").addEventListener("click", () => $("#midiDialog").classList.remove("open"));
+    $("#midiDialog").addEventListener("click", event => { if (event.target === $("#midiDialog")) $("#midiDialog").classList.remove("open"); });
+    document.addEventListener("keydown", event => {
+      if (event.key === "Delete" && selectedRouteLinks.length) {
+        const editing = event.target instanceof Element && event.target.closest("input, textarea, select, [contenteditable=true]");
+        if (!editing) {
+          event.preventDefault();
+          const removed = [...selectedRouteLinks];
+          const affectedInputs = new Set(removed.filter(link => link.source >= 1 && link.source <= 8).map(link => link.source - 1));
+          config.routeLinks = config.routeLinks.filter(link => !removed.includes(link));
+          selectedRouteLinks = [];
+          selectedRoutePort = null;
+          saveConfig(); setupRouting();
+          affectedInputs.forEach(sendRoutingRow);
+          setStatus(`Removed ${removed.length} selected route${removed.length === 1 ? "" : "s"}.`);
+          return;
+        }
+      }
+      if (event.ctrlKey && event.key >= "1" && event.key <= "3") { event.preventDefault(); switchView(["routing", "presets", "mappings"][Number(event.key) - 1]); }
+      if (event.ctrlKey && event.key.toLowerCase() === "s") { event.preventDefault(); exportConfig(); }
+      if (event.ctrlKey && event.key.toLowerCase() === "o") { event.preventDefault(); $("#configFile").click(); }
+      if (event.ctrlKey && event.key.toLowerCase() === "r") { event.preventDefault(); setupRouting(); setupMappings(); if (midiAccess) updateMidiPorts(); }
+      if (event.key === "Escape") { $("#fileMenu").classList.remove("open"); $("#midiDialog").classList.remove("open"); }
+    });
+    document.addEventListener("click", event => {
+      if (!event.target.closest(".menu-wrap")) $("#fileMenu").classList.remove("open");
+    });
+  }
+  setupRouting();
+  setupPresets();
+  setupMappings();
+  restoreInitialSettings();
+  bindEvents();
+  requestMidiAccess();
+})();
+</script>
+</body>
+</html>
