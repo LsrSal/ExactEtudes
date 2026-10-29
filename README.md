@@ -1,8 +1,9 @@
+
 # ExactEtudes (MOTU Clockworks replacement)
 
 
-
-<img width="500" height="500" alt="EXACTETUDES_2" src="https://github.com/user-attachments/assets/fe3dcc8b-4a4c-44ac-b8dd-b368047dc569" />
+<img height="300" alt="Screenshot 2026-10-29 195242" src="https://github.com/user-attachments/assets/bbc240d2-140c-4915-85a3-51a488a0cb09" />
+<img height="300" alt="EXACTETUDES_2" src="https://github.com/user-attachments/assets/fe3dcc8b-4a4c-44ac-b8dd-b368047dc569" />
 <img width="50" height="40" alt="V1 - proof of concept" src="https://github.com/user-attachments/assets/9295c06e-377d-49c9-b467-ec2768ecd1b7" />
 
 
